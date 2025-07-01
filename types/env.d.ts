@@ -1,0 +1,18 @@
+declare global {
+  namespace NodeJS {
+    interface ProcessEnv {
+      EXPO_PUBLIC_FIREBASE_API_KEY: string;
+      EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN: string;
+      EXPO_PUBLIC_FIREBASE_PROJECT_ID: string;
+      EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET: string;
+      EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: string;
+      EXPO_PUBLIC_FIREBASE_APP_ID: string;
+      EXPO_PUBLIC_GYM_LATITUDE: string;
+      EXPO_PUBLIC_GYM_LONGITUDE: string;
+      EXPO_PUBLIC_MAX_DISTANCE_METERS: string;
+    }
+  }
+}
+
+// Ensure this file is treated as a module
+export {};
