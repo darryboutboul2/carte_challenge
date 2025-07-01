@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
 import { useFirebaseData } from '@/hooks/useFirebaseData';
-import { MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 export default function FirebaseStatus() {
   const { error, isLoading } = useFirebaseData();
@@ -15,7 +15,7 @@ export default function FirebaseStatus() {
     return (
       <View style={styles.container}>
         <View style={styles.statusIndicator}>
-          <Wifi size={16} color="#fbbf24" />
+          <MaterialCommunityIcons name="wifi" size={16} color="#fbbf24" />
           <Text style={styles.statusText}>Connexion...</Text>
         </View>
       </View>
@@ -26,7 +26,7 @@ export default function FirebaseStatus() {
     return (
       <View style={styles.container}>
         <View style={[styles.statusIndicator, styles.errorIndicator]}>
-          <WifiOff size={16} color="#ef4444" />
+          <MaterialCommunityIcons name="wifi-off" size={16} color="#ef4444" />
           <Text style={[styles.statusText, styles.errorText]}>Mode hors ligne</Text>
         </View>
       </View>
@@ -36,7 +36,7 @@ export default function FirebaseStatus() {
   return (
     <View style={styles.container}>
       <View style={[styles.statusIndicator, styles.successIndicator]}>
-        <Wifi size={16} color="#10b981" />
+        <MaterialCommunityIcons name="wifi" size={16} color="#10b981" />
         <Text style={[styles.statusText, styles.successText]}>Connecté</Text>
       </View>
     </View>
