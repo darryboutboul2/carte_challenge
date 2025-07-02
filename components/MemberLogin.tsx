@@ -1,7 +1,8 @@
+// components/MemberLogin.tsx
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 interface MemberLoginProps {
   onLogin: (name: string) => Promise<void>;
@@ -14,16 +15,15 @@ const MemberLogin: React.FC<MemberLoginProps> = ({
   onLogin,
   onBackToAdmin,
   gymName,
-  isLoading = false
+  isLoading = false,
 }) => {
   const [name, setName] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleLogin = async () => {
-    console.log('🔄 handleLogin appelé avec:', name, 'isLoading:', isLoading, 'isSubmitting:', isSubmitting);
+    console.log('🔄 handleLogin appelé avec:', name, 'isLoading:', isLoading);
 
-    if (isLoading || isSubmitting) {
-      console.log('⚠️ Connexion déjà en cours, ignorer');
+    if (isLoading) {
+      console.log('⚠️ Connexion déjà en cours, j’ignore ce clic');
       return;
     }
 
@@ -31,8 +31,6 @@ const MemberLogin: React.FC<MemberLoginProps> = ({
       Alert.alert('Erreur', 'Veuillez entrer un nom valide (minimum 2 caractères)');
       return;
     }
-
-    setIsSubmitting(true);
 
     try {
       console.log('🚀 Début de la connexion pour:', name.trim());
@@ -44,12 +42,10 @@ const MemberLogin: React.FC<MemberLoginProps> = ({
         'Erreur',
         error instanceof Error ? error.message : 'Erreur de connexion'
       );
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
-  const isButtonDisabled = isLoading || isSubmitting || name.trim().length < 2;
+  const isButtonDisabled = isLoading || name.trim().length < 2;
 
   return (
     <LinearGradient
@@ -58,10 +54,10 @@ const MemberLogin: React.FC<MemberLoginProps> = ({
     >
       <View style={styles.content}>
         {onBackToAdmin && (
-          <TouchableOpacity 
-            style={styles.backButton} 
+          <TouchableOpacity
+            style={styles.backButton}
             onPress={onBackToAdmin}
-            disabled={isLoading || isSubmitting}
+            disabled={isLoading}
           >
             <MaterialCommunityIcons name="arrow-left" size={24} color="white" />
             <Text style={styles.backButtonText}>Retour Admin</Text>
@@ -86,15 +82,15 @@ const MemberLogin: React.FC<MemberLoginProps> = ({
             autoCapitalize="words"
             returnKeyType="done"
             onSubmitEditing={handleLogin}
-            editable={!isLoading && !isSubmitting}
+            editable={!isLoading}
             autoCorrect={false}
             autoComplete="name"
           />
 
           <TouchableOpacity
             style={[
-              styles.loginButton, 
-              isButtonDisabled && styles.loginButtonDisabled
+              styles.loginButton,
+              isButtonDisabled && styles.loginButtonDisabled,
             ]}
             onPress={handleLogin}
             disabled={isButtonDisabled}
@@ -102,19 +98,19 @@ const MemberLogin: React.FC<MemberLoginProps> = ({
           >
             <LinearGradient
               colors={
-                isButtonDisabled 
-                  ? ['#6b7280', '#4b5563'] 
+                isButtonDisabled
+                  ? ['#6b7280', '#4b5563']
                   : ['#be185d', '#ec4899']
               }
               style={styles.buttonGradient}
             >
-              {(isLoading || isSubmitting) ? (
+              {isLoading ? (
                 <MaterialCommunityIcons name="loading" size={20} color="white" />
               ) : (
                 <MaterialCommunityIcons name="login" size={20} color="white" />
               )}
               <Text style={styles.buttonText}>
-                {(isLoading || isSubmitting) ? 'Connexion...' : 'Se connecter'}
+                {isLoading ? 'Connexion...' : 'Se connecter'}
               </Text>
             </LinearGradient>
           </TouchableOpacity>
