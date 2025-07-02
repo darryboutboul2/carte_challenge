@@ -37,24 +37,41 @@ export default function HomeScreen() {
   // États locaux
   const [showRewardModal, setShowRewardModal] = useState(false);
   const [showMotivationModal, setShowMotivationModal] = useState(false);
-  // on passe à any pour lever les erreurs de type
   const [currentMotivation, setCurrentMotivation] = useState<any>(null);
   const [isProcessingVisit, setIsProcessingVisit] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   const activeMember = fitnessCurrentMember || currentMember;
 
-  // 2) handleMemberLogin sans hook à l’intérieur
+  // 2) handleMemberLogin corrigé avec gestion d'état
   const handleMemberLogin = async (name: string) => {
-    console.trace('📍 Début de handleMemberLogin');
+    console.log('📍 Début de handleMemberLogin avec:', name);
+    
+    if (isLoggingIn) {
+      console.log('⚠️ Connexion déjà en cours, ignorer');
+      return;
+    }
+
+    setIsLoggingIn(true);
+    
     try {
       if (currentAdmin) {
+        console.log('🔑 Connexion via admin:', currentAdmin.id);
         await loginMember(name, currentAdmin.id);
       } else {
+        console.log('🏃 Connexion via fitness loyalty');
         await fitnessLogin(name);
       }
+      console.log('✅ Connexion réussie');
     } catch (error) {
-      console.error('Erreur lors de la connexion membre :', error);
+      console.error('❌ Erreur lors de la connexion membre:', error);
+      Alert.alert(
+        'Erreur de connexion',
+        error instanceof Error ? error.message : 'Une erreur est survenue lors de la connexion'
+      );
       throw error;
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
@@ -109,9 +126,10 @@ export default function HomeScreen() {
 
   if (authLoading || loyaltyLoading) {
     return (
-      <View style={styles.loadingContainer}>
+      <LinearGradient colors={['#1e1b4b', '#581c87', '#be185d']} style={styles.loadingContainer}>
+        <MaterialCommunityIcons name="loading" size={32} color="white" />
         <Text style={styles.loadingText}>Chargement...</Text>
-      </View>
+      </LinearGradient>
     );
   }
 
@@ -125,6 +143,7 @@ export default function HomeScreen() {
             ? () => router.replace('/(tabs)')
             : undefined
         }
+        isLoading={isLoggingIn}
       />
     );
   }
@@ -249,9 +268,13 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#1e1b4b',
+    gap: 16,
   },
-  loadingText: { fontSize: 18, color: 'white' },
+  loadingText: { 
+    fontSize: 18, 
+    color: 'white',
+    marginTop: 8,
+  },
   header: { padding: 24, paddingBottom: 16 },
   headerTitle: { fontSize: 28, fontWeight: 'bold', color: 'white', marginBottom: 4 },
   headerSubtitle: { fontSize: 16, color: 'rgba(255,255,255,0.8)' },

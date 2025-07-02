@@ -17,25 +17,39 @@ const MemberLogin: React.FC<MemberLoginProps> = ({
   isLoading = false
 }) => {
   const [name, setName] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleLogin = async () => {
-    // TRACE pour localiser l’erreur
-    console.trace('📍 Début de handleLogin');
+    console.log('🔄 handleLogin appelé avec:', name, 'isLoading:', isLoading, 'isSubmitting:', isSubmitting);
+
+    if (isLoading || isSubmitting) {
+      console.log('⚠️ Connexion déjà en cours, ignorer');
+      return;
+    }
 
     if (name.trim().length < 2) {
       Alert.alert('Erreur', 'Veuillez entrer un nom valide (minimum 2 caractères)');
       return;
     }
 
+    setIsSubmitting(true);
+
     try {
+      console.log('🚀 Début de la connexion pour:', name.trim());
       await onLogin(name.trim());
+      console.log('✅ Connexion terminée avec succès');
     } catch (error) {
+      console.error('❌ Erreur dans handleLogin:', error);
       Alert.alert(
         'Erreur',
         error instanceof Error ? error.message : 'Erreur de connexion'
       );
+    } finally {
+      setIsSubmitting(false);
     }
   };
+
+  const isButtonDisabled = isLoading || isSubmitting || name.trim().length < 2;
 
   return (
     <LinearGradient
@@ -44,7 +58,11 @@ const MemberLogin: React.FC<MemberLoginProps> = ({
     >
       <View style={styles.content}>
         {onBackToAdmin && (
-          <TouchableOpacity style={styles.backButton} onPress={onBackToAdmin}>
+          <TouchableOpacity 
+            style={styles.backButton} 
+            onPress={onBackToAdmin}
+            disabled={isLoading || isSubmitting}
+          >
             <MaterialCommunityIcons name="arrow-left" size={24} color="white" />
             <Text style={styles.backButtonText}>Retour Admin</Text>
           </TouchableOpacity>
@@ -60,7 +78,7 @@ const MemberLogin: React.FC<MemberLoginProps> = ({
         <View style={styles.form}>
           <Text style={styles.label}>Votre nom</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, isButtonDisabled && styles.inputDisabled]}
             value={name}
             onChangeText={setName}
             placeholder="Entrez votre nom"
@@ -68,22 +86,35 @@ const MemberLogin: React.FC<MemberLoginProps> = ({
             autoCapitalize="words"
             returnKeyType="done"
             onSubmitEditing={handleLogin}
-            editable={!isLoading}
+            editable={!isLoading && !isSubmitting}
+            autoCorrect={false}
+            autoComplete="name"
           />
 
           <TouchableOpacity
-            style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
+            style={[
+              styles.loginButton, 
+              isButtonDisabled && styles.loginButtonDisabled
+            ]}
             onPress={handleLogin}
-            disabled={isLoading}
+            disabled={isButtonDisabled}
             activeOpacity={0.8}
           >
             <LinearGradient
-              colors={isLoading ? ['#6b7280', '#4b5563'] : ['#be185d', '#ec4899']}
+              colors={
+                isButtonDisabled 
+                  ? ['#6b7280', '#4b5563'] 
+                  : ['#be185d', '#ec4899']
+              }
               style={styles.buttonGradient}
             >
-              <MaterialCommunityIcons name="login" size={20} color="white" />
+              {(isLoading || isSubmitting) ? (
+                <MaterialCommunityIcons name="loading" size={20} color="white" />
+              ) : (
+                <MaterialCommunityIcons name="login" size={20} color="white" />
+              )}
               <Text style={styles.buttonText}>
-                {isLoading ? 'Connexion...' : 'Se connecter'}
+                {(isLoading || isSubmitting) ? 'Connexion...' : 'Se connecter'}
               </Text>
             </LinearGradient>
           </TouchableOpacity>
@@ -167,6 +198,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.2)',
     marginBottom: 24,
+  },
+  inputDisabled: {
+    opacity: 0.6,
   },
   loginButton: {
     borderRadius: 12,

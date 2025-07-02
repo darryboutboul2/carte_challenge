@@ -123,7 +123,7 @@ export const useFitnessLoyalty = () => {
   }, [firebaseMembers, getMemberByName, isFirebaseAvailable]);
 
   const loginMember = useCallback(async (name: string) => {
-    console.log('loginMember appelé avec:', name);
+    console.log('🔄 useFitnessLoyalty.loginMember appelé avec:', name);
     
     try {
       let member: Member;
@@ -147,40 +147,43 @@ export const useFitnessLoyalty = () => {
             adminId: 'default'
           };
           
-          console.log('Membre trouvé dans Firebase:', member);
+          console.log('✅ Membre trouvé dans Firebase:', member);
         } else {
           // Create new member locally and in Firebase
           member = createDefaultMember(name);
-          console.log('Nouveau membre créé:', member);
+          console.log('🆕 Nouveau membre créé:', member);
           
           // Add to Firebase
           try {
             if (addFirebaseMember) {
               await addFirebaseMember({ name });
-              console.log('Membre ajouté à Firebase');
+              console.log('✅ Membre ajouté à Firebase');
             }
           } catch (error) {
-            console.error('Error adding member to Firebase:', error);
+            console.error('❌ Error adding member to Firebase:', error);
             // Continue with local storage if Firebase fails
           }
         }
       } else {
         // Firebase not available, create local member
-        console.log('Firebase non disponible, création locale');
+        console.log('🔄 Firebase non disponible, création locale');
         member = createDefaultMember(name);
       }
 
       setCurrentMember(member);
       saveToStorage(STORAGE_KEYS.CURRENT_MEMBER, member);
-      console.log('Membre connecté avec succès:', member);
+      console.log('✅ Membre connecté avec succès:', member);
+      
+      return member;
       
     } catch (error) {
-      console.error('Error during login:', error);
+      console.error('❌ Error during login:', error);
       // Fallback to local storage
       const member = createDefaultMember(name);
       setCurrentMember(member);
       saveToStorage(STORAGE_KEYS.CURRENT_MEMBER, member);
-      console.log('Fallback: membre créé localement:', member);
+      console.log('🔄 Fallback: membre créé localement:', member);
+      return member;
     }
   }, [getMemberByName, addFirebaseMember, saveToStorage, isFirebaseAvailable]);
 
