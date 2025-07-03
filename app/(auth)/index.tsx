@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
-import { useFitnessLoyalty } from '@/hooks/useFitnessLoyalty';
 import { router } from 'expo-router';
+import { useFitnessLoyalty } from '@/hooks/useFitnessLoyalty';
 
 export default function AuthScreen() {
   const [name, setName] = useState('');
@@ -29,6 +29,10 @@ export default function AuthScreen() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleAdminAccess = () => {
+    router.push('/(auth)/admin');
   };
 
   return (
@@ -72,6 +76,15 @@ export default function AuthScreen() {
                 {isLoading ? 'Connexion...' : 'Se connecter'}
               </Text>
             </LinearGradient>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.adminButton} 
+            onPress={handleAdminAccess}
+            disabled={isLoading}
+          >
+            <MaterialCommunityIcons name="shield" size={16} color="#8b5cf6" />
+            <Text style={styles.adminButtonText}>Accès Administrateur</Text>
           </TouchableOpacity>
         </View>
 
@@ -135,6 +148,7 @@ const styles = StyleSheet.create({
   loginButton: {
     borderRadius: 12,
     overflow: 'hidden',
+    marginBottom: 16,
   },
   loginButtonDisabled: {
     opacity: 0.7,
@@ -150,6 +164,22 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: 'white',
+  },
+  adminButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.3)',
+    borderRadius: 12,
+    padding: 12,
+    gap: 8,
+  },
+  adminButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#8b5cf6',
   },
   footer: {
     marginTop: 48,
