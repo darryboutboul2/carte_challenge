@@ -156,7 +156,7 @@ export default function HomeScreen() {
     );
   }
 
-  // Cas écran de login : on wrappe dans un ScrollView pour autoriser la première tape
+  // Écran de login
   if (!activeMember) {
     return (
       <KeyboardAvoidingView behavior="padding" style={styles.wrapper}>
@@ -194,7 +194,6 @@ export default function HomeScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* En-tête */}
           <View style={styles.header}>
             <Text style={styles.headerTitle}>Bonjour {activeMember.name}</Text>
             <Text style={styles.headerSubtitle}>
@@ -203,31 +202,119 @@ export default function HomeScreen() {
             </Text>
           </View>
 
-          {/* Carte Membre */}
           <View style={styles.memberCard}>
             <LinearGradient
               colors={['rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']}
               style={styles.cardGradient}
             >
-              {/* ... contenu de la carte ... */}
+              <View style={styles.cardHeader}>
+                <View style={styles.memberInfo}>
+                  <Text style={styles.memberName}>{activeMember.name}</Text>
+                  <View style={styles.levelBadge}>
+                    <LinearGradient
+                      colors={levelColors}
+                      style={styles.levelGradient}
+                    >
+                      <Text style={styles.levelEmoji}>
+                        {getMemberLevelEmoji(activeMember.level)}
+                      </Text>
+                      <Text style={styles.levelText}>
+                        {activeMember.level}
+                      </Text>
+                    </LinearGradient>
+                  </View>
+                </View>
+                <MaterialCommunityIcons
+                  name="trophy"
+                  size={32}
+                  color="#fbbf24"
+                />
+              </View>
+              <View style={styles.statsContainer}>
+                <View style={styles.statItem}>
+                  <Text style={styles.statNumber}>
+                    {activeMember.visits}
+                  </Text>
+                  <Text style={styles.statLabel}>Passages</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={styles.statNumber}>
+                    {activeMember.totalRewards}
+                  </Text>
+                  <Text style={styles.statLabel}>Récompenses</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={styles.statNumber}>
+                    {Math.floor(activeMember.visits / 7)}
+                  </Text>
+                  <Text style={styles.statLabel}>Semaines</Text>
+                </View>
+              </View>
             </LinearGradient>
           </View>
 
-          {/* Progression */}
-          {/* ... reste du contenu ... */}
+          <View style={styles.progressSection}>
+            <Text style={styles.sectionTitle}>
+              Progression vers la prochaine récompense
+            </Text>
+            <View style={styles.progressCard}>
+              <View style={styles.progressHeader}>
+                <Text style={styles.progressText}>
+                  {progress.current} / {progress.required} passages
+                </Text>
+                <Text style={styles.progressPercentage}>
+                  {Math.round(progress.percentage)}%
+                </Text>
+              </View>
+              <View style={styles.progressBarContainer}>
+                <View
+                  style={[
+                    styles.progressBar,
+                    { width: `${progress.percentage}%` },
+                  ]}
+                />
+              </View>
+              <Text style={styles.progressSubtext}>
+                Plus que {progress.required - progress.current} passage
+                {progress.required - progress.current > 1 ? 's' : ''} !
+              </Text>
+            </View>
+          </View>
 
-          {/* Bouton Visite */}
           <VisitButton
             onValidateVisit={handleValidateVisit}
             isProcessing={isProcessingVisit}
           />
 
-          {/* Activité récente */}
-          {/* ... */}
+          <View style={styles.activitySection}>
+            <Text style={styles.sectionTitle}>Activité récente</Text>
+            {recentVisits.length > 0 ? (
+              recentVisits.map((visit) => (
+                <View key={visit.id} style={styles.activityItem}>
+                  <MaterialCommunityIcons
+                    name="calendar"
+                    size={16}
+                    color="#6b7280"
+                  />
+                  <Text style={styles.activityText}>
+                    {new Date(visit.date).toLocaleDateString('fr-FR', {
+                      day: 'numeric',
+                      month: 'short',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </Text>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.noActivityText}>
+                Aucune activité récente
+              </Text>
+            )}
+          </View>
         </ScrollView>
       </SafeAreaView>
 
-      {/* Modales */}
       <RewardModal
         visible={showRewardModal}
         onClose={() => setShowRewardModal(false)}
@@ -298,5 +385,128 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
   },
-  // ... gardez le reste de vos styles existants ...
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 20,
+  },
+  memberInfo: {
+    flex: 1,
+  },
+  memberName: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: 'white',
+    marginBottom: 8,
+  },
+  levelBadge: {
+    alignSelf: 'flex-start',
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
+  levelGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    gap: 6,
+  },
+  levelEmoji: {
+    fontSize: 16,
+  },
+  levelText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: 'white',
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  statItem: {
+    alignItems: 'center',
+  },
+  statNumber: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: 'white',
+    marginTop: 8,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.7)',
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  progressSection: {
+    marginHorizontal: 24,
+    marginBottom: 8,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: 'white',
+    marginBottom: 16,
+  },
+  progressCard: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  progressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  progressText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: 'white',
+  },
+  progressPercentage: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#fbbf24',
+  },
+  progressBarContainer: {
+    height: 8,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 4,
+    marginBottom: 8,
+  },
+  progressBar: {
+    height: '100%',
+    backgroundColor: '#fbbf24',
+    borderRadius: 4,
+  },
+  progressSubtext: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.7)',
+  },
+  activitySection: {
+    marginHorizontal: 24,
+    marginBottom: 32,
+  },
+  activityItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+    gap: 8,
+  },
+  activityText: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.8)',
+  },
+  noActivityText: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.6)',
+    textAlign: 'center',
+    padding: 20,
+  },
 });
