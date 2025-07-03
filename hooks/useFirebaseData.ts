@@ -66,11 +66,22 @@ export interface FirebaseVisit {
   createdAt: Timestamp;
 }
 
+export interface FirebaseAdmin {
+  id?: string;
+  name: string;
+  email: string;
+  gymName: string;
+  phone?: string;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
 export const useFirebaseData = () => {
   const [clubInfo, setClubInfo] = useState<FirebaseClubInfo | null>(null);
   const [rewards, setRewards] = useState<FirebaseReward[]>([]);
   const [members, setMembers] = useState<FirebaseMember[]>([]);
   const [visits, setVisits] = useState<FirebaseVisit[]>([]);
+  const [admins, setAdmins] = useState<FirebaseAdmin[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -153,6 +164,21 @@ export const useFirebaseData = () => {
         setError('Erreur lors du chargement des visites');
       });
       unsubscribes.push(unsubVisits);
+
+      // Admins listener
+      const adminsQuery = query(collection(db, 'admins'), orderBy('createdAt', 'desc'));
+      const unsubAdmins = onSnapshot(adminsQuery, (snapshot) => {
+        const adminsData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as FirebaseAdmin[];
+        setAdmins(adminsData);
+        setError(null);
+      }, (err) => {
+        console.error('Error loading admins:', err);
+        setError('Erreur lors du chargement des admins');
+      });
+      unsubscribes.push(unsubAdmins);
 
     } catch (err) {
       console.error('Error setting up Firebase listeners:', err);
@@ -339,6 +365,41 @@ export const useFirebaseData = () => {
     return visits.filter(visit => visit.memberId === memberId);
   }, [visits]);
 
+  // Get admin by gym name
+  const getAdminByGymName = useCallback(async (gymName: string): Promise<FirebaseAdmin | null> => {
+    if (!isFirebaseAvailable()) {
+      return null;
+    }
+
+    try {
+      // First check if we already have the admin in our local state
+      const localAdmin = admins.find(admin => 
+        admin.gymName.toLowerCase() === gymName.toLowerCase()
+      );
+      
+      if (localAdmin) {
+        return localAdmin;
+      }
+
+      // If not found locally, query Firebase
+      const adminsQuery = query(
+        collection(db, 'admins'), 
+        where('gymName', '==', gymName)
+      );
+      const snapshot = await getDocs(adminsQuery);
+      
+      if (!snapshot.empty) {
+        const doc = snapshot.docs[0];
+        return { id: doc.id, ...doc.data() } as FirebaseAdmin;
+      }
+      
+      return null;
+    } catch (err) {
+      console.error('Error getting admin by gym name:', err);
+      return null;
+    }
+  }, [admins, isFirebaseAvailable]);
+
   // Helper function to determine member level
   const getMemberLevel = (visits: number): string => {
     if (visits >= 150) return 'Platine';
@@ -353,6 +414,7 @@ export const useFirebaseData = () => {
     rewards,
     members,
     visits,
+    admins,
     isLoading,
     error,
 
@@ -372,6 +434,9 @@ export const useFirebaseData = () => {
 
     // Visits operations
     addVisit,
+
+    // Admin operations
+    getAdminByGymName,
 
     // Utils
     clearError: () => setError(null),

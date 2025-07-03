@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Platform } from 'react-native';
 import { Admin, Member, AuthState } from '@/types';
 import { useFirebaseAuth } from './useFirebaseAuth';
+import { useFirebaseData } from './useFirebaseData';
 
 // Storage utilities for hybrid platform support (fallback)
 const storage = {
@@ -64,6 +65,9 @@ export const useAuth = () => {
     error: firebaseError,
     isAuthAvailable
   } = useFirebaseAuth();
+
+  // Firebase data integration
+  const { getAdminByGymName } = useFirebaseData();
 
   // Load auth state from storage or Firebase
   useEffect(() => {
@@ -172,7 +176,18 @@ export const useAuth = () => {
   const loginMember = useCallback(async (name: string, adminId?: string) => {
     try {
       // Use current admin's ID if not provided
-      const targetAdminId = adminId || authState.currentAdmin?.id;
+      let targetAdminId = adminId || authState.currentAdmin?.id;
+      
+      // If no admin ID is available, try to get the default gym admin
+      if (!targetAdminId) {
+        console.log('No admin ID provided, looking for default gym admin...');
+        const defaultAdmin = await getAdminByGymName('Carte Challenge');
+        if (defaultAdmin?.id) {
+          targetAdminId = defaultAdmin.id;
+          console.log('Found default admin:', defaultAdmin.id);
+        }
+      }
+      
       if (!targetAdminId) {
         throw new Error('Aucun admin sélectionné');
       }
@@ -207,7 +222,7 @@ export const useAuth = () => {
       console.error('Error logging in member:', error);
       throw error;
     }
-  }, [firebaseLoginMember, authState.currentAdmin, saveToStorage, isAuthAvailable]);
+  }, [firebaseLoginMember, authState.currentAdmin, saveToStorage, isAuthAvailable, getAdminByGymName]);
 
   const logoutMember = useCallback(async () => {
     try {
