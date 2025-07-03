@@ -65,6 +65,11 @@ service cloud.firestore {
     match /visits/{document} {
       allow read, write: if true;
     }
+    
+    // Admins - lecture/écriture pour utilisateurs authentifiés
+    match /admins/{document} {
+      allow read, write: if request.auth != null;
+    }
   }
 }
 ```
@@ -128,6 +133,16 @@ service cloud.firestore {
     longitude: number;
   };
   createdAt: Timestamp;
+}
+```
+
+#### `admins`
+```typescript
+{
+  email: string;
+  password: string; // Hashé
+  createdAt: Timestamp;
+  lastLogin?: Timestamp;
 }
 ```
 
