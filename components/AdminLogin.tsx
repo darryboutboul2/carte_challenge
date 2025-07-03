@@ -121,7 +121,7 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin, onRegister, isLoading 
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Nom de la salle *</Text>
                   <View style={styles.inputContainer}>
-                    <Building2 size={20} color="#9ca3af" style={styles.inputIcon} />
+                    <MaterialCommunityIcons name="office-building" size={20} color="#9ca3af" style={styles.inputIcon} />
                     <TextInput
                       style={[styles.input, styles.inputWithIcon]}
                       value={formData.gymName}
