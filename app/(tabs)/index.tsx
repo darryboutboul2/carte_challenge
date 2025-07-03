@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
   Alert,
   KeyboardAvoidingView,
 } from 'react-native';
@@ -18,15 +17,14 @@ import MemberLogin from '@/components/MemberLogin';
 import VisitButton from '@/components/VisitButton';
 import RewardModal from '@/components/RewardModal';
 import MotivationModal from '@/components/MotivationModal';
-import { MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 export default function HomeScreen() {
-  // 1) Hooks EN HAUT du composant
   const {
     currentAdmin,
     currentMember,
     isAdminMode,
-    loginMember,
+    loginMember: authLoginMember,
     switchToMemberMode,
     isLoading: authLoading,
   } = useAuth();
@@ -34,7 +32,6 @@ export default function HomeScreen() {
   const {
     currentMember: fitnessCurrentMember,
     isLoading: loyaltyLoading,
-    loginMember: fitnessLogin,
     addVisit,
     getProgressToNextReward,
     getRecentVisits,
@@ -42,7 +39,6 @@ export default function HomeScreen() {
 
   const { getMotivationMessage } = useMotivation();
 
-  // États locaux
   const [showRewardModal, setShowRewardModal] = useState(false);
   const [showMotivationModal, setShowMotivationModal] = useState(false);
   const [currentMotivation, setCurrentMotivation] = useState<any>(null);
@@ -51,96 +47,49 @@ export default function HomeScreen() {
 
   const activeMember = fitnessCurrentMember || currentMember;
 
-  // 2) handleMemberLogin corrigé avec gestion d'état
   const handleMemberLogin = async (name: string) => {
-    console.log('📍 Début de handleMemberLogin avec:', name);
-
-    if (isLoggingIn) {
-      console.log('⚠️ Connexion déjà en cours, ignorer');
-      return;
-    }
-
+    if (isLoggingIn) return;
     setIsLoggingIn(true);
 
     try {
-      if (currentAdmin) {
-        console.log('🔑 Connexion via admin:', currentAdmin.id);
-        await loginMember(name, currentAdmin.id);
-      } else {
-        console.log('🏃 Connexion via fitness loyalty');
-        await fitnessLogin(name);
-      }
-      console.log('✅ Connexion réussie');
+      // on appelle toujours authLoginMember :
+      // - si on est admin, il gère la création via admin.id
+      // - sinon, il tombe en fallback fitness-loyalty
+      await authLoginMember(name.trim(), currentAdmin?.id);
+      // une fois connecté, on force la navigation
+      router.replace('/(tabs)');
     } catch (error) {
-      console.error('❌ Erreur lors de la connexion membre:', error);
       Alert.alert(
         'Erreur de connexion',
         error instanceof Error
           ? error.message
-          : 'Une erreur est survenue lors de la connexion'
+          : 'Un problème est survenu'
       );
-      throw error;
     } finally {
       setIsLoggingIn(false);
     }
   };
 
-  // 3) handleValidateVisit devient async
   const handleValidateVisit = async () => {
     if (!activeMember) return;
     setIsProcessingVisit(true);
-
     try {
       const result = await addVisit();
       if (result) {
-        const motivationMsg = getMotivationMessage(
+        const msg = getMotivationMessage(
           result.member.visits,
           result.member.totalRewards
         );
-        if (motivationMsg) {
-          setCurrentMotivation(motivationMsg);
+        if (msg) {
+          setCurrentMotivation(msg);
           setShowMotivationModal(true);
         }
         if (result.newReward) {
-          setTimeout(() => setShowRewardModal(true), motivationMsg ? 2000 : 500);
+          setTimeout(() => setShowRewardModal(true), msg ? 2000 : 500);
         }
       }
     } finally {
       setTimeout(() => setIsProcessingVisit(false), 2000);
-    }
-  };
-
-  const handleSwitchToMemberMode = async () => {
-    await switchToMemberMode();
-  };
-
-  const getMemberLevelEmoji = (level: string) => {
-    switch (level) {
-      case 'Bronze':
-        return '🥉';
-      case 'Argent':
-        return '🥈';
-      case 'Or':
-        return '🥇';
-      case 'Platine':
-        return '💎';
-      default:
-        return '🏃';
-    }
-  };
-
-  const getMemberLevelColor = (level: string): [string, string] => {
-    switch (level) {
-      case 'Bronze':
-        return ['#cd7f32', '#b8690a'];
-      case 'Argent':
-        return ['#c0c0c0', '#a8a8a8'];
-      case 'Or':
-        return ['#ffd700', '#ffb347'];
-      case 'Platine':
-        return ['#e5e4e2', '#d3d3d3'];
-      default:
-        return ['#6b7280', '#4b5563'];
     }
   };
 
@@ -156,7 +105,7 @@ export default function HomeScreen() {
     );
   }
 
-  // Écran de login
+  // Écran de connexion si pas encore de member
   if (!activeMember) {
     return (
       <KeyboardAvoidingView behavior="padding" style={styles.wrapper}>
@@ -169,7 +118,7 @@ export default function HomeScreen() {
             gymName={currentAdmin?.gymName || 'Carte Challenge'}
             onBackToAdmin={
               isAdminMode && currentAdmin
-                ? () => router.replace('/(tabs)')
+                ? () => switchToMemberMode()
                 : undefined
             }
             isLoading={isLoggingIn}
@@ -179,9 +128,9 @@ export default function HomeScreen() {
     );
   }
 
+  // Écran principal une fois connecté
   const progress = getProgressToNextReward();
   const recentVisits = getRecentVisits(3);
-  const levelColors = getMemberLevelColor(activeMember.level);
 
   return (
     <LinearGradient
@@ -195,7 +144,9 @@ export default function HomeScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>Bonjour {activeMember.name}</Text>
+            <Text style={styles.headerTitle}>
+              Bonjour {activeMember.name}
+            </Text>
             <Text style={styles.headerSubtitle}>
               Prêt pour votre entraînement chez{' '}
               {currentAdmin?.gymName || 'Carte Challenge'} ?
@@ -209,19 +160,13 @@ export default function HomeScreen() {
             >
               <View style={styles.cardHeader}>
                 <View style={styles.memberInfo}>
-                  <Text style={styles.memberName}>{activeMember.name}</Text>
+                  <Text style={styles.memberName}>
+                    {activeMember.name}
+                  </Text>
                   <View style={styles.levelBadge}>
-                    <LinearGradient
-                      colors={levelColors}
-                      style={styles.levelGradient}
-                    >
-                      <Text style={styles.levelEmoji}>
-                        {getMemberLevelEmoji(activeMember.level)}
-                      </Text>
-                      <Text style={styles.levelText}>
-                        {activeMember.level}
-                      </Text>
-                    </LinearGradient>
+                    <Text style={styles.levelText}>
+                      {activeMember.level}
+                    </Text>
                   </View>
                 </View>
                 <MaterialCommunityIcons
@@ -332,23 +277,11 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
-    flex: 1,
-  },
-  loginContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    padding: 16,
-  },
-  container: {
-    flex: 1,
-  },
-  safeArea: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
+  wrapper: { flex: 1 },
+  loginContainer: { flex: 1, justifyContent: 'center', padding: 16 },
+  container: { flex: 1 },
+  safeArea: { flex: 1 },
+  scrollView: { flex: 1 },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -360,40 +293,23 @@ const styles = StyleSheet.create({
     color: 'white',
     marginTop: 8,
   },
-  header: {
-    padding: 24,
-    paddingBottom: 16,
-  },
+  header: { padding: 24, paddingBottom: 16 },
   headerTitle: {
     fontSize: 28,
     fontWeight: 'bold',
     color: 'white',
     marginBottom: 4,
   },
-  headerSubtitle: {
-    fontSize: 16,
-    color: 'rgba(255,255,255,0.8)',
-  },
-  memberCard: {
-    margin: 24,
-    marginTop: 8,
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  cardGradient: {
-    padding: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
+  headerSubtitle: { fontSize: 16, color: 'rgba(255,255,255,0.8)' },
+  memberCard: { margin: 24, marginTop: 8, borderRadius: 16, overflow: 'hidden' },
+  cardGradient: { padding: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: 20,
   },
-  memberInfo: {
-    flex: 1,
-  },
+  memberInfo: { flex: 1 },
   memberName: {
     fontSize: 20,
     fontWeight: 'bold',
@@ -405,28 +321,9 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     overflow: 'hidden',
   },
-  levelGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    gap: 6,
-  },
-  levelEmoji: {
-    fontSize: 16,
-  },
-  levelText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: 'white',
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  statItem: {
-    alignItems: 'center',
-  },
+  levelText: { fontSize: 14, fontWeight: '600', color: 'white' },
+  statsContainer: { flexDirection: 'row', justifyContent: 'space-around' },
+  statItem: { alignItems: 'center' },
   statNumber: {
     fontSize: 24,
     fontWeight: 'bold',
@@ -439,10 +336,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 4,
   },
-  progressSection: {
-    marginHorizontal: 24,
-    marginBottom: 8,
-  },
+  progressSection: { marginHorizontal: 24, marginBottom: 8 },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
@@ -461,11 +355,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 8,
   },
-  progressText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: 'white',
-  },
+  progressText: { fontSize: 16, fontWeight: '600', color: 'white' },
   progressPercentage: {
     fontSize: 16,
     fontWeight: 'bold',
@@ -482,14 +372,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#fbbf24',
     borderRadius: 4,
   },
-  progressSubtext: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.7)',
-  },
-  activitySection: {
-    marginHorizontal: 24,
-    marginBottom: 32,
-  },
+  progressSubtext: { fontSize: 12, color: 'rgba(255,255,255,0.7)' },
+  activitySection: { marginHorizontal: 24, marginBottom: 32 },
   activityItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -499,10 +383,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     gap: 8,
   },
-  activityText: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.8)',
-  },
+  activityText: { fontSize: 14, color: 'rgba(255,255,255,0.8)' },
   noActivityText: {
     fontSize: 14,
     color: 'rgba(255,255,255,0.6)',
