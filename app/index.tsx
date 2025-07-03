@@ -1,48 +1,30 @@
-import React, { useState } from 'react';
-import { ScrollView, KeyboardAvoidingView, StyleSheet } from 'react-native';
+import { useEffect } from 'react';
+import { Redirect } from 'expo-router';
 import { useAuth } from '@/hooks/useAuth';
-import MemberLogin from '@/components/MemberLogin';
-import { loginMember, fitnessLogin } from '@/hooks/useFitnessLoyalty';
+import LoadingSpinner from '@/components/LoadingSpinner';
+import { View, StyleSheet } from 'react-native';
 
-export default function TabsIndex() {
-  const { currentAdmin } = useAuth();
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
-
-  const handleMemberLogin = async (name: string) => {
-    if (isLoggingIn) return;
-    setIsLoggingIn(true);
-    try {
-      if (currentAdmin) {
-        await loginMember(name, currentAdmin.id);
-      } else {
-        await fitnessLogin(name);
-      }
-    } catch (error) {
-      console.error('Erreur de connexion :', error);
-    } finally {
-      setIsLoggingIn(false);
-    }
-  };
-
+export default function IndexRedirect() {
+  const { currentAdmin, currentMember, isLoading } = useAuth();
+  
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <LoadingSpinner size={32} />
+      </View>
+    );
+  }
+  
   return (
-    <KeyboardAvoidingView behavior="padding" style={styles.wrapper}>
-      <ScrollView
-        contentContainerStyle={styles.container}
-        keyboardShouldPersistTaps="handled"
-      >
-        <MemberLogin onLogin={handleMemberLogin} />
-      </ScrollView>
-    </KeyboardAvoidingView>
+    <Redirect href={currentAdmin || currentMember ? '/(tabs)' : '/(auth)'} />
   );
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
-    flex: 1,
-  },
-  container: {
+  loadingContainer: {
     flex: 1,
     justifyContent: 'center',
-    padding: 16,
+    alignItems: 'center',
+    backgroundColor: '#1e1b4b',
   },
 });
